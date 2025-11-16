@@ -1,6 +1,7 @@
 import json
 import random
 import sys
+import os
 import argparse
 from PIL import Image, ImageFile
 from pathlib import Path
@@ -8,18 +9,17 @@ from pathlib import Path
 import numpy as np
 from PIL import Image, ImageFile
 
-sys.path.append("/home/dzc/yuanhao/syn_aes_data/utils")
-sys.path.append("/home/dzc/yuanhao/syn_aes_data/DepictQA")
-sys.path.append("/home/dzc/yuanhao/syn_aes_data/DepictQA/build_datasets")
-from constant import CATEGORY_TO_CLASSES
-from tool import (
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from utils.constant import CATEGORY_TO_CLASSES
+from utils.tool import (
     seed_everything,
     get_category_from_class,
     get_distortion_name,
     is_distortion_classes_duplicate,
 )
-from build_datasets.scripts.constants_md import multi_distortions_dict
-from build_datasets.x_distortion import add_distortion, distortions_dict
+from depictqa.build_datasets.scripts.constants_md import multi_distortions_dict
+from depictqa.build_datasets.x_distortion import add_distortion, distortions_dict
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 

@@ -1,4 +1,4 @@
-from x_distortion import distortions_dict
+from depictqa.build_datasets.x_distortion import distortions_dict
 
 multi_distortions_dict = {
     # Brightness 类别

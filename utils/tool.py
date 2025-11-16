@@ -1,4 +1,4 @@
-from constant import CATEGORY_TO_CLASSES, DIST_DICT
+from utils.constant import CATEGORY_TO_CLASSES, DIST_DICT
 import os
 import json
 import random

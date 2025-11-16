@@ -2,22 +2,20 @@ import os
 import re
 import argparse
 import json
+import time
 import torch
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from transformers import Qwen3VLForConditionalGeneration, AutoProcessor
 
-# specify the gpu to use
-os.environ['CUDA_VISIBLE_DEVICES'] = '1'
-
 
 parser = argparse.ArgumentParser(description="Generate instructions for multiple distortions")
 parser.add_argument("--meta_json", type=str, required=True, 
                     help="Path to load meta json file")
-parser.add_argument("--save_dir", type=str, required=True,
+parser.add_argument("--save_json", type=str, required=True,
                     help="Path to save generated instructions json file")
 parser.add_argument("--model-path",type=str,help="Path to load qwen model",
-                    default='/home/dzc/yuanhao/model/Qwen3-VL-8B-Instruct')
+                    default='Qwen/Qwen3-VL-8B-Instruct')
 
 # create two dictionaries to map distortion name to description and opposite beautification operation.
 distortion_name_dict={
@@ -194,14 +192,16 @@ def generate_instruction(model, processor, img_ref_path, img_lq_path, distortion
             "instruction 3": "",
             "instruction 4": ""
         }
+
 def load_existing_results(save_path):
     if os.path.exists(save_path):
         with open(save_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
+            return set(json.loads(line)['pair_id'] for line in f)
+    return set()
+
 def save_results(save_path, results):
-    with open(save_path, 'w', encoding='utf-8') as f:
-        json.dump(results, f, indent=4, ensure_ascii=False)
+    with open(save_path, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(results, ensure_ascii=False) + '\n')
 
 
 if __name__ == "__main__":
@@ -217,8 +217,8 @@ if __name__ == "__main__":
     with open(args.meta_json, 'r', encoding='utf-8') as f:
         distortion_data = json.load(f)
     
-    os.makedirs(args.save_dir, exist_ok=True)
-    main_results_path = os.path.join(args.save_dir, "instructions.json")
+    os.makedirs(os.path.dirname(args.save_json), exist_ok=True)
+    main_results_path = args.save_json
     all_results = load_existing_results(main_results_path)
     
     total_entries=sum(
@@ -226,13 +226,14 @@ if __name__ == "__main__":
         for image_data in distortion_data.values()
     )
     
-    skipped_count = len(all_results)
+    skipped_count = 0
+    failed_count = 0
     processed_count = 0
     
     print(f"=" * 80)
     print(f"Total entries: {total_entries}")
-    print(f"Already processed: {skipped_count}")
-    print(f"Remaining: {total_entries - skipped_count}")
+    print(f"Already processed: {len(all_results)}")
+    print(f"Remaining: {total_entries - len(all_results)}")
     print(f"=" * 80)
     
     for image_name, image_data in distortion_data.items():
@@ -258,7 +259,7 @@ if __name__ == "__main__":
             for key,_ in dist_info.get("distortion_order_name",{}).items():
                 distortion_names.append(key)
             
-
+            start_time = time.time()
                 
             instructions=generate_instruction(
                     model, processor,
@@ -270,8 +271,13 @@ if __name__ == "__main__":
             
             if not isinstance(instructions, dict):
                 instructions = {}
+            if instructions.get("instruction 1", "") == "" or instructions.get("instruction 2", "") == "" or instructions.get("instruction 3", "") == "" or instructions.get("instruction 4", "") == "":
+                failed_count += 1
+                print(f"Failed to generate instructions for {entry_key}")
+                continue
                 
             output_entry = {
+                    "pair_id": entry_key,
                     "image_name": image_name,
                     "img_ref": img_ref,
                     "img_lq": dist_info.get("img_lq"),
@@ -284,15 +290,17 @@ if __name__ == "__main__":
                     "instruction_4": instructions.get("instruction 4", ""),
                 }
 
-            all_results[entry_key] = output_entry
-            save_results(main_results_path, all_results)
+            save_results(main_results_path, output_entry)
             processed_count += 1
-            print(f"Processed {processed_count + skipped_count}/{total_entries}: {entry_key}")
+
+            elapsed_time = time.time() - start_time
+            print(f"Processed {processed_count + skipped_count}/{total_entries}: {entry_key} (Time: {elapsed_time:.2f}s)")
     
     print(f"=" * 80)
     print(f"Processing completed!")
     print(f"Total: {total_entries}")
     print(f"Processed in this run: {processed_count}")
-    print(f"Already processed: {skipped_count - processed_count}")
+    print(f"Already processed: {skipped_count + failed_count}")
+    print(f"Failed: {failed_count}")
     print(f"Results saved to: {main_results_path}")
     print(f"=" * 80)

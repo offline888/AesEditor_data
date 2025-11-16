@@ -7,11 +7,10 @@ import argparse
 import numpy as np
 from PIL import Image, ImageFile
 import sys
-sys.path.append("/home/dzc/yuanhao/syn_aes_data/utils")
-sys.path.append("/home/dzc/yuanhao/syn_aes_data/DepictQA")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from constant import DIST_DICT, CATEGORY_TO_CLASSES
-from tool import (
+from utils.constant import DIST_DICT, CATEGORY_TO_CLASSES
+from utils.tool import (
     get_category_from_class,
     get_distortion_class,
     save_json_append,
@@ -19,7 +18,7 @@ from tool import (
     weighted_sample_without_replacement,
     CATEGORY_WEIGHTS
 )
-from build_datasets.x_distortion import add_distortion
+from depictqa.build_datasets.x_distortion import add_distortion
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
@@ -114,7 +113,7 @@ if __name__ == "__main__":
     distortion_dir = args.distortion_dir
     os.makedirs(distortion_dir, exist_ok=True)
     # info about saving json
-    json_file_path = os.path.join(args.json_path, "meta.json")
+    json_file_path = args.json_path
     processed_count = 0
     # collect image paths
     reference_dir = args.reference_dir
