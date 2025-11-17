@@ -6,3 +6,7 @@
 /single_n5_large
 /tool_scripts
 
+__pycache__
+data/
+temp/
+plots/
