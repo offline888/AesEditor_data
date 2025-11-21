@@ -229,50 +229,55 @@ if __name__ == "__main__":
             
         distortions = image_data.get("distortions", [])
         for dist_info in distortions:
-            img_lq = dist_info.get('img_lq', '')
-            if not img_lq:
-                continue
+            try:
+                img_lq = dist_info.get('img_lq', '')
+                if not img_lq:
+                    continue
+                    
+                entry_key = f"{image_name}_{os.path.splitext(os.path.basename(img_lq))[0]}"
                 
-            entry_key = f"{image_name}_{os.path.splitext(os.path.basename(img_lq))[0]}"
-            
-            if entry_key in all_results:
-                skipped_count += 1
-                continue
-            
-            # 记录开始时间
-            start_time = time.time()
-            
-            instructions=generate_instruction(
-                    model, processor,
-                    img_ref,
-                    dist_info.get("img_lq"),
-                    dist_info.get("distortion_name"),
-                    dist_info.get("severity")
-            )
-            if not isinstance(instructions, dict):
-                instructions = {}
-            if instructions.get("instruction 1", "") == "" or instructions.get("instruction 2", "") == "" or instructions.get("instruction 3", "") == "" or instructions.get("instruction 4", "") == "":
-                failed_count += 1
-                print(f"Failed to generate instructions for {entry_key}")
-                continue
+                if entry_key in all_results:
+                    skipped_count += 1
+                    continue
                 
-            output_entry = {
-                    "pair_id": entry_key,
-                    "image_name": image_name,
-                    "img_ref": img_ref,
-                    "img_lq": dist_info.get("img_lq"),
-                    "distortion_class": dist_info.get("distortion_class"),
-                    "distortion_name": dist_info.get("distortion_name"),
-                    "severity": dist_info.get("severity"),
-                    "instruction_1": instructions.get("instruction 1", ""),
-                    "instruction_2": instructions.get("instruction 2", ""),
-                    "instruction_3": instructions.get("instruction 3", ""),
-                    "instruction_4": instructions.get("instruction 4", ""),
-            }
+                # 记录开始时间
+                start_time = time.time()
+                
+                instructions=generate_instruction(
+                        model, processor,
+                        img_ref,
+                        dist_info.get("img_lq"),
+                        dist_info.get("distortion_name"),
+                        dist_info.get("severity")
+                )
+                if not isinstance(instructions, dict):
+                    instructions = {}
+                if instructions.get("instruction 1", "") == "" or instructions.get("instruction 2", "") == "" or instructions.get("instruction 3", "") == "" or instructions.get("instruction 4", "") == "":
+                    failed_count += 1
+                    print(f"Failed to generate instructions for {entry_key}")
+                    continue
+                    
+                output_entry = {
+                        "pair_id": entry_key,
+                        "image_name": image_name,
+                        "img_ref": img_ref,
+                        "img_lq": dist_info.get("img_lq"),
+                        "distortion_class": dist_info.get("distortion_class"),
+                        "distortion_name": dist_info.get("distortion_name"),
+                        "severity": dist_info.get("severity"),
+                        "instruction_1": instructions.get("instruction 1", ""),
+                        "instruction_2": instructions.get("instruction 2", ""),
+                        "instruction_3": instructions.get("instruction 3", ""),
+                        "instruction_4": instructions.get("instruction 4", ""),
+                }
 
-            save_results(main_results_path, output_entry)
-            processed_count += 1
+                save_results(main_results_path, output_entry)
+            except Exception as e:
+                failed_count += 1
+                print(f"Failed to generate instructions for {entry_key}: {e}")
+                continue
             
+            processed_count += 1
             # 计算并输出耗时
             elapsed_time = time.time() - start_time
             print(f"Processed {processed_count + skipped_count + failed_count}/{total_entries}: {entry_key} (Time: {elapsed_time:.2f}s)")
