@@ -9,33 +9,47 @@ to
 
 import json
 import os
+from tqdm import tqdm
 
 in_jsons = [
     "data/sd_instructions_part0.jsonl",
     "data/sd_instructions_part1.jsonl",
+    "data/sd_instructions_part2.jsonl",
+    "data/sd_instructions_part3.jsonl",
     "data/md_instructions_part0.jsonl",
     "data/md_instructions_part1.jsonl",
+    "data/md_instructions_part2.jsonl",
+    "data/md_instructions_part3.jsonl",
 ]
-out_json = "data/pexels.jsonl"
+test_json = "data/pexels_test.jsonl"
+train_json = "data/pexels_train.jsonl"
 
 
-with open(out_json, 'w') as f_out:
-    for in_json in in_jsons:
-        if not os.path.exists(in_json):
-            print(f"{in_json} not found")
-            continue
-        with open(in_json, 'r') as f:
-            for line in f:
-                data = json.loads(line)
-                f_out.write(json.dumps({
-                    "raw": data["img_lq"],
-                    "target": data["img_ref"],
-                    "type": "single" if '/sd_' in data["img_lq"] else "multi",
-                    "source": "Pexels.com",
-                    "pair_id": f"{data['img_lq']}->{data['img_ref']}",
-                    "instruction": data["instruction_1"],
-                    "instructions": [data["instruction_1"], data["instruction_2"], data["instruction_3"], data["instruction_4"]],
-                    "distortion_class": data.get("distortion_class", None) or data["distortion_classes"],
-                    "distortion_name": data.get("distortion_name", None) or data["distortion_names"],
-                    "severity": data.get("severity", None) or data["severities"],
-                }, ensure_ascii=False) + "\n")
+with open(train_json, 'w') as train_out:
+    with open(test_json, 'w') as test_out:
+        for in_json in in_jsons:
+            if not os.path.exists(in_json):
+                print(f"{in_json} not found")
+                continue
+            print(f"processing {in_json}")
+            with open(in_json, 'r') as f:
+                for i, line in tqdm(enumerate(f), desc=f"processing {in_json}"):
+                    data = json.loads(line)
+                    img_lq = data["img_lq"].replace("data/", "")
+                    img_ref = data["img_ref"].replace("data/", "")
+                    write_line = json.dumps({
+                        "raw": img_lq,
+                        "target": img_ref,
+                        "type": "single" if '/sd_' in in_json else "multi",
+                        "source": "Pexels.com",
+                        "pair_id": f"{img_lq}->{img_ref}",
+                        "instruction": data["instruction_1"],
+                        "instructions": [data["instruction_1"], data["instruction_2"], data["instruction_3"], data["instruction_4"]],
+                        "distortion_class": data.get("distortion_class", None) or data["distortion_classes"],
+                        "distortion_name": data.get("distortion_name", None) or data["distortion_names"],
+                        "severity": data.get("severity", None) or data["severities"],
+                    }, ensure_ascii=False) + "\n"
+                    if i < 125:
+                        test_out.write(write_line)
+                    else:
+                        train_out.write(write_line)
