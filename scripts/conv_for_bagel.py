@@ -10,23 +10,32 @@ to
 import json
 import os
 
-in_json = "data/md_instructions_part0.jsonl"
-out_json = "data/md_instructions_part0_bagel.jsonl"
+in_jsons = [
+    "data/sd_instructions_part0.jsonl",
+    "data/sd_instructions_part1.jsonl",
+    "data/md_instructions_part0.jsonl",
+    "data/md_instructions_part1.jsonl",
+]
+out_json = "data/pexels.jsonl"
 
 
-with open(in_json, 'r') as f:
-    with open(out_json, 'w') as f_out:
-        for line in f:
-            data = json.loads(line)
-            f_out.write(json.dumps({
-                "raw": data["img_lq"],
-                "target": data["img_ref"],
-                "type": "single" if '/sd_' in data["img_lq"] else "multi",
-                "source": "Pexels.com",
-                "pair_id": f"{data['img_lq']}->{data['img_ref']}",
-                "instruction": data["instruction_1"],
-                "instructions": [data["instruction_1"], data["instruction_2"], data["instruction_3"], data["instruction_4"]],
-                "distortion_class": data.get("distortion_class", None) or data["distortion_classes"],
-                "distortion_name": data.get("distortion_name", None) or data["distortion_names"],
-                "severity": data.get("severity", None) or data["severities"],
-            }) + "\n")
+with open(out_json, 'w') as f_out:
+    for in_json in in_jsons:
+        if not os.path.exists(in_json):
+            print(f"{in_json} not found")
+            continue
+        with open(in_json, 'r') as f:
+            for line in f:
+                data = json.loads(line)
+                f_out.write(json.dumps({
+                    "raw": data["img_lq"],
+                    "target": data["img_ref"],
+                    "type": "single" if '/sd_' in data["img_lq"] else "multi",
+                    "source": "Pexels.com",
+                    "pair_id": f"{data['img_lq']}->{data['img_ref']}",
+                    "instruction": data["instruction_1"],
+                    "instructions": [data["instruction_1"], data["instruction_2"], data["instruction_3"], data["instruction_4"]],
+                    "distortion_class": data.get("distortion_class", None) or data["distortion_classes"],
+                    "distortion_name": data.get("distortion_name", None) or data["distortion_names"],
+                    "severity": data.get("severity", None) or data["severities"],
+                }, ensure_ascii=False) + "\n")
