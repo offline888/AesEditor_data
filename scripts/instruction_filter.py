@@ -33,7 +33,7 @@ def build_instruction_block(instruction_text):
         match = re.match(r'^(\d+)[\.\)]\s*(.*)$', line)
         text = match.group(2).strip() if match else line
         candidates.append(text)
-        if len(candidates) == 5:
+        if len(candidates) == 5: 
             break
 
     structured = [
